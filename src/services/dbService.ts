@@ -26,16 +26,24 @@ const isSupabaseWorking = async (): Promise<boolean> => {
   }
 };
 
-// Initialize LocalStorage Data (Force reset and clean up operational mock datasets)
+// Initialize LocalStorage Data if not present
 const initLocalStorage = () => {
   if (!localStorage.getItem('hrd_members')) {
     localStorage.setItem('hrd_members', JSON.stringify(INITIAL_MEMBERS));
   }
-  // Clear operational tables completely to avoid user confusion
-  localStorage.setItem('hrd_projects', JSON.stringify([]));
-  localStorage.setItem('hrd_rounds', JSON.stringify([]));
-  localStorage.setItem('hrd_checklists', JSON.stringify([]));
-  localStorage.setItem('hrd_share_posts', JSON.stringify([]));
+  // Initialize to empty arrays only if they don't exist yet, preserving saved user data
+  if (!localStorage.getItem('hrd_projects')) {
+    localStorage.setItem('hrd_projects', JSON.stringify([]));
+  }
+  if (!localStorage.getItem('hrd_rounds')) {
+    localStorage.setItem('hrd_rounds', JSON.stringify([]));
+  }
+  if (!localStorage.getItem('hrd_checklists')) {
+    localStorage.setItem('hrd_checklists', JSON.stringify([]));
+  }
+  if (!localStorage.getItem('hrd_share_posts')) {
+    localStorage.setItem('hrd_share_posts', JSON.stringify([]));
+  }
 };
 
 // Auto run initialization
