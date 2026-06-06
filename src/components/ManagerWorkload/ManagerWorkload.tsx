@@ -290,10 +290,21 @@ export default function ManagerWorkload({
                         {member.position}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 font-mono">
-                      <span>전체 {memberRounds.length}개 차수</span>
-                      <span className="text-slate-300">•</span>
-                      <span>참여 프로젝트 {memberProjects.length}개</span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10.5px] font-bold">
+                      <span className={`px-2 py-0.5 rounded-md flex items-center gap-1 shadow-3xs ${
+                        memberRounds.length > 0
+                          ? 'bg-rose-50 text-rose-700 border border-rose-100 font-black'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                      }`}>
+                        🔥 배정 {memberRounds.length}개 차수
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md flex items-center gap-1 shadow-3xs ${
+                        memberProjects.length > 0
+                          ? 'bg-cyan-50 text-cyan-700 border border-cyan-100 font-black'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                      }`}>
+                        💼 참여 {memberProjects.length}개 프로젝트
+                      </span>
                     </div>
                   </div>
                 </div>
