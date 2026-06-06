@@ -1104,10 +1104,10 @@ export default function App() {
                 </section>
 
                 {/* TAB VIEW SELECTION CONTROLS */}
-                <div className="flex bg-slate-200/80 p-1 rounded-2xl max-w-xs">
+                <div className="flex bg-slate-200/80 p-1 rounded-2xl w-fit max-w-sm border border-slate-300/40 shadow-3xs">
                   <button
                     onClick={() => setCurrentTab('timeline')}
-                    className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                    className={`flex-1 text-xs font-bold py-2 px-4 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                       currentTab === 'timeline' 
                         ? 'bg-white text-slate-900 shadow-xs font-extrabold' 
                         : 'text-slate-500 hover:text-slate-800'
@@ -1118,7 +1118,7 @@ export default function App() {
 
                   <button
                     onClick={() => setCurrentTab('kanban')}
-                    className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                    className={`flex-1 text-xs font-bold py-2 px-4 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                       currentTab === 'kanban' 
                         ? 'bg-white text-slate-900 shadow-xs font-extrabold' 
                         : 'text-slate-500 hover:text-slate-800'
@@ -1129,7 +1129,7 @@ export default function App() {
 
                   <button
                     onClick={() => setCurrentTab('manager')}
-                    className={`flex-1 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                    className={`flex-1 text-xs font-bold py-2 px-4 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                       currentTab === 'manager' 
                         ? 'bg-white text-slate-900 shadow-xs font-extrabold' 
                         : 'text-slate-500 hover:text-slate-800'
