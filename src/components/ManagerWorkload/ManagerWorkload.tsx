@@ -58,7 +58,7 @@ export default function ManagerWorkload({
 
     if (filterTab === 'all') return true;
 
-    // Build the member's assigned rounds list to determine conditions
+    // Build the member's assigned rounds list to determine conditions (Only round-level support/field roles)
     const memberRounds = rounds.filter(round => {
       if (!round.is_active) return false;
       
@@ -69,15 +69,8 @@ export default function ManagerWorkload({
 
       const isSupport = round.support_manager_ids?.includes(member.id);
       const isField = round.field_manager_ids?.includes(member.id);
-      
-      const parentProj = projects.find(p => p.id === round.project_id);
-      const isProjectRole = parentProj && (
-        parentProj.business_manager_id === member.id ||
-        parentProj.pm_manager_id === member.id ||
-        parentProj.pl_manager_id === member.id
-      );
 
-      return isSupport || isField || isProjectRole;
+      return isSupport || isField;
     });
 
     if (filterTab === 'active_this_month') {
@@ -206,7 +199,7 @@ export default function ManagerWorkload({
             return true;
           });
 
-          // Find rounds they are directly involved in (either through round roles, or parent project roles) in the selected year
+          // Find rounds they are directly involved in (Only round-level support/field roles) in the selected year
           const memberRounds = rounds.filter(round => {
             if (!round.is_active) return false;
             
@@ -218,16 +211,8 @@ export default function ManagerWorkload({
             // Directly on round
             const isSupport = round.support_manager_ids?.includes(member.id);
             const isField = round.field_manager_ids?.includes(member.id);
-            
-            // Or via parent project
-            const parentProj = projects.find(p => p.id === round.project_id);
-            const isProjectRole = parentProj && (
-              parentProj.business_manager_id === member.id ||
-              parentProj.pm_manager_id === member.id ||
-              parentProj.pl_manager_id === member.id
-            );
 
-            return isSupport || isField || isProjectRole;
+            return isSupport || isField;
           });
 
           // Calculate sub-statuses
@@ -239,20 +224,20 @@ export default function ManagerWorkload({
           // Missing satisfaction count for completed rounds they are involved in
           const missingSatCount = memberRounds.filter(r => r.status === '완료' && (r.satisfaction === null || r.satisfaction === undefined)).length;
 
-          // Roles count
+          // Roles count (Project roles are calculated per project; round roles are calculated per round)
           let bizCount = 0;
           let pmCount = 0;
           let plCount = 0;
           let supportCount = 0;
           let fieldCount = 0;
 
+          memberProjects.forEach(proj => {
+            if (proj.business_manager_id === member.id) bizCount++;
+            if (proj.pm_manager_id === member.id) pmCount++;
+            if (proj.pl_manager_id === member.id) plCount++;
+          });
+
           memberRounds.forEach(r => {
-            const proj = projects.find(p => p.id === r.project_id);
-            if (proj) {
-              if (proj.business_manager_id === member.id) bizCount++;
-              if (proj.pm_manager_id === member.id) pmCount++;
-              if (proj.pl_manager_id === member.id) plCount++;
-            }
             if (r.support_manager_ids?.includes(member.id)) supportCount++;
             if (r.field_manager_ids?.includes(member.id)) fieldCount++;
           });
@@ -542,18 +527,34 @@ export default function ManagerWorkload({
                   {/* Active Rounds List */}
                   {(() => {
                     const activeRoleFilter = memberRoleFilters[member.id] || null;
-                    const displayedRounds = memberRounds.filter(round => {
+                    
+                    let baseRounds = memberRounds;
+                    if (activeRoleFilter === '사업담당' || activeRoleFilter === 'PM' || activeRoleFilter === 'PL') {
+                      // Project role filter: gather all active rounds under projects they manage
+                      baseRounds = rounds.filter(round => {
+                        if (!round.is_active) return false;
+                        if (round.start_date) {
+                          const roundYear = new Date(round.start_date).getFullYear();
+                          if (roundYear !== selectedYear) return false;
+                        }
+                        const parentProj = projects.find(p => p.id === round.project_id);
+                        if (!parentProj) return false;
+                        
+                        if (activeRoleFilter === '사업담당') {
+                          return parentProj.business_manager_id === member.id;
+                        }
+                        if (activeRoleFilter === 'PM') {
+                          return parentProj.pm_manager_id === member.id;
+                        }
+                        if (activeRoleFilter === 'PL') {
+                          return parentProj.pl_manager_id === member.id;
+                        }
+                        return false;
+                      });
+                    }
+
+                    const displayedRounds = baseRounds.filter(round => {
                       if (!activeRoleFilter) return true;
-                      const parentProj = projects.find(p => p.id === round.project_id);
-                      if (activeRoleFilter === '사업담당') {
-                        return parentProj?.business_manager_id === member.id;
-                      }
-                      if (activeRoleFilter === 'PM') {
-                        return parentProj?.pm_manager_id === member.id;
-                      }
-                      if (activeRoleFilter === 'PL') {
-                        return parentProj?.pl_manager_id === member.id;
-                      }
                       if (activeRoleFilter === '메인') {
                         return round.support_manager_ids?.includes(member.id);
                       }
