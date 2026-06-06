@@ -1,0 +1,6 @@
+{
+  "name": "HRD 사업팀 과정운영 관리",
+  "description": "HRD사업팀에서 운영하는 교육 프로젝트와 세부 차수를 통합 관리하고, 담당자별 업무 현황을 차수 기준으로 파악하기 위한 관리 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
