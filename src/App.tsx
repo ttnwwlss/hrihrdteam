@@ -38,7 +38,8 @@ import {
   CheckSquare,
   Menu,
   X,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [sharePosts, setSharePosts] = useState<SharePost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,6 +103,7 @@ export default function App() {
   // Reload action
   const loadAllData = async (silent = false) => {
     if (!silent) setLoading(true);
+    setDbError(null);
     try {
       const data = await dbService.reloadAllData();
       
@@ -145,8 +148,9 @@ export default function App() {
         setChecklistItems(data.checklists);
         setSharePosts(data.sharePosts || []);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error('Data load error:', e);
+      setDbError(e.message || '데이터베이스(Supabase)로부터 데이터를 불러오는 도중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -637,6 +641,43 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tracking-tight pb-8">
+      
+      {/* DB ERROR ALERT BANNER */}
+      {dbError && (
+        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4">
+          <div className="bg-rose-50 border border-rose-200 rounded-3xl p-5 shadow-sm text-slate-800 flex flex-col md:flex-row md:items-start gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+              <AlertTriangle size={22} className="stroke-[2.2]" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                데이터베이스(Supabase) 연동 장애가 발생했습니다.
+              </h3>
+              <p className="text-xs text-rose-700 leading-normal font-medium whitespace-pre-wrap font-mono bg-white/60 p-2 rounded-lg border border-rose-100">
+                {dbError}
+              </p>
+              <div className="text-[11px] leading-relaxed pt-2.5 border-t border-rose-100/60 mt-2">
+                <span className="font-bold block text-slate-700 mb-1">🛠️ 신속 자가진단 및 조치 가이드:</span>
+                <ul className="list-disc pl-4 space-y-1 text-slate-650">
+                  <li><strong>Vercel 환경 변수 설정</strong>: Vercel 프로젝트 설정의 Environment Variables에 <code>VITE_SUPABASE_URL</code>과 <code>VITE_SUPABASE_ANON_KEY</code>가 오타 없이 입력되었는지 점검하세요. (입력 후 재배포가 필요합니다)</li>
+                  <li><strong>로컬 개발 환경 설정</strong>: 로컬 프로젝트 루트에 <code>.env</code> 파일이 존재하고 올바른 환경 변수가 기입되어 있는지 확인해 주세요.</li>
+                  <li><strong>RLS 정책 비활성화 또는 설정 확인</strong>: Supabase 대시보드에서 각 테이블(<code>members</code>, <code>projects</code>, <code>rounds</code>, <code>checklists</code>, <code>share_posts</code>)의 <strong>RLS (Row Level Security)</strong> 정책이 Anon Key의 Select, Insert, Update, Delete를 허용하도록 되어 있는지 점검해 주세요.</li>
+                  <li><strong>테이블 부재 확인</strong>: Supabase DB에 명시된 테이블이 정상적으로 생성되어 있는지 확인해 주세요. (특히 신규 추가된 <code>share_posts</code> 테이블)</li>
+                </ul>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => loadAllData(false)}
+                  className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold py-2 px-4 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer w-fit shadow-xs shadow-rose-100"
+                >
+                  <RefreshCw size={13} />
+                  <span>데이터베이스 연결 다시 시도</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* SIDEBAR NAVIGATION DRAWER */}
       {isSidebarOpen && (

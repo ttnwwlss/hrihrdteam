@@ -1,343 +1,248 @@
 import { Member, Project, Round, ChecklistItem, SharePost } from '../types';
 import { supabase } from '../lib/supabaseClient';
 
-// --- MOCK / SEED DATA ---
-const INITIAL_MEMBERS: Member[] = [
-  { id: 'm1', name: '김도원', position: '팀장', sort_order: 1, is_active: true },
-  { id: 'm2', name: '이준우', position: 'PM', sort_order: 2, is_active: true },
-  { id: 'm3', name: '최은서', position: 'PL', sort_order: 3, is_active: true },
-  { id: 'm4', name: '박서현', position: '선임연구원', sort_order: 4, is_active: true },
-  { id: 'm5', name: '정민우', position: '연구원', sort_order: 5, is_active: true }
-];
-
-const INITIAL_PROJECTS: Project[] = [];
-const INITIAL_ROUNDS: Round[] = [];
-const INITIAL_CHECKLISTS: ChecklistItem[] = [];
-const INITIAL_SHARE_POSTS: SharePost[] = [];
-
-// Helper to check if Supabase is available and ready
-const isSupabaseWorking = async (): Promise<boolean> => {
-  if (!supabase) return false;
-  try {
-    const { error } = await supabase.from('members').select('id').limit(1);
-    return !error;
-  } catch {
-    return false;
+// Helper to throw a standardized database connection/configuration error
+const ensureSupabase = () => {
+  if (!supabase) {
+    throw new Error(
+      'Supabase 클라이언트가 초기화되지 않았습니다. VITE_SUPABASE_URL 및 VITE_SUPABASE_ANON_KEY 환경변수가 올바르게 설정되었는지 확인해 주세요.'
+    );
   }
 };
-
-// Initialize LocalStorage Data if not present
-const initLocalStorage = () => {
-  if (!localStorage.getItem('hrd_members')) {
-    localStorage.setItem('hrd_members', JSON.stringify(INITIAL_MEMBERS));
-  }
-  // Initialize to empty arrays only if they don't exist yet, preserving saved user data
-  if (!localStorage.getItem('hrd_projects')) {
-    localStorage.setItem('hrd_projects', JSON.stringify([]));
-  }
-  if (!localStorage.getItem('hrd_rounds')) {
-    localStorage.setItem('hrd_rounds', JSON.stringify([]));
-  }
-  if (!localStorage.getItem('hrd_checklists')) {
-    localStorage.setItem('hrd_checklists', JSON.stringify([]));
-  }
-  if (!localStorage.getItem('hrd_share_posts')) {
-    localStorage.setItem('hrd_share_posts', JSON.stringify([]));
-  }
-};
-
-// Auto run initialization
-initLocalStorage();
 
 export const dbService = {
   // === MEMBERS ===
   async getMembers(): Promise<Member[]> {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('members')
-          .select('*')
-          .order('sort_order', { ascending: true });
-        if (!error && data) return data as Member[];
-      } catch (e) {
-        console.warn('Supabase members fetch failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('members')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase members fetch failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_members');
-    return local ? JSON.parse(local) : INITIAL_MEMBERS;
+    return data as Member[];
   },
 
   async saveMember(member: Member): Promise<Member> {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('members')
-          .upsert(member)
-          .select()
-          .single();
-        if (!error && data) return data as Member;
-      } catch (e) {
-        console.warn('Supabase member save failed, saving to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('members')
+      .upsert(member)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase member save failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_members');
-    let list: Member[] = local ? JSON.parse(local) : INITIAL_MEMBERS;
-    const index = list.findIndex(m => m.id === member.id);
-    if (index >= 0) {
-      list[index] = member;
-    } else {
-      list.push(member);
-    }
-    localStorage.setItem('hrd_members', JSON.stringify(list));
-    return member;
+    return data as Member;
   },
 
   async deleteMember(id: string): Promise<boolean> {
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('members').delete().eq('id', id);
-        if (!error) return true;
-      } catch (e) {
-        console.warn('Supabase member delete failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { error } = await supabase!
+      .from('members')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase member delete failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_members');
-    if (local) {
-      let list: Member[] = JSON.parse(local);
-      list = list.filter(m => m.id !== id);
-      localStorage.setItem('hrd_members', JSON.stringify(list));
-      return true;
-    }
-    return false;
+    return true;
   },
 
   // === PROJECTS ===
   async getProjects(): Promise<Project[]> {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .order('sort_order', { ascending: true });
-        if (!error && data) return data as Project[];
-      } catch (e) {
-        console.warn('Supabase projects fetch failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('projects')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase projects fetch failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_projects');
-    return local ? JSON.parse(local) : INITIAL_PROJECTS;
+    return data as Project[];
   },
 
   async saveProject(project: Project): Promise<Project> {
+    ensureSupabase();
     const updatedProject = {
       ...project,
       updated_at: new Date().toISOString()
     };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('projects')
-          .upsert(updatedProject)
-          .select()
-          .single();
-        if (!error && data) return data as Project;
-      } catch (e) {
-        console.warn('Supabase project save failed, saving to LocalStorage', e);
-      }
+    const { data, error } = await supabase!
+      .from('projects')
+      .upsert(updatedProject)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase project save failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_projects');
-    let list: Project[] = local ? JSON.parse(local) : INITIAL_PROJECTS;
-    const index = list.findIndex(p => p.id === project.id);
-    if (index >= 0) {
-      list[index] = updatedProject;
-    } else {
-      list.push(updatedProject);
-    }
-    localStorage.setItem('hrd_projects', JSON.stringify(list));
-    return updatedProject;
+    return data as Project;
   },
 
   async deleteProject(id: string): Promise<boolean> {
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('projects').delete().eq('id', id);
-        if (!error) return true;
-      } catch (e) {
-        console.warn('Supabase project delete failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { error } = await supabase!
+      .from('projects')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase project delete failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_projects');
-    if (local) {
-      let list: Project[] = JSON.parse(local);
-      list = list.filter(p => p.id !== id);
-      localStorage.setItem('hrd_projects', JSON.stringify(list));
-      return true;
-    }
-    return false;
+    return true;
   },
 
   // === ROUNDS ===
   async getRounds(): Promise<Round[]> {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('rounds')
-          .select('*')
-          .order('round_no', { ascending: true });
-        if (!error && data) return data as Round[];
-      } catch (e) {
-        console.warn('Supabase rounds fetch failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('rounds')
+      .select('*')
+      .order('round_no', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase rounds fetch failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_rounds');
-    return local ? JSON.parse(local) : INITIAL_ROUNDS;
+    return data as Round[];
   },
 
   async saveRound(round: Round): Promise<Round> {
+    ensureSupabase();
     const updatedRound = {
       ...round,
       updated_at: new Date().toISOString()
     };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('rounds')
-          .upsert(updatedRound)
-          .select()
-          .single();
-        if (!error && data) return data as Round;
-      } catch (e) {
-        console.warn('Supabase round save failed, saving to LocalStorage', e);
-      }
+    const { data, error } = await supabase!
+      .from('rounds')
+      .upsert(updatedRound)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase round save failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_rounds');
-    let list: Round[] = local ? JSON.parse(local) : INITIAL_ROUNDS;
-    const index = list.findIndex(r => r.id === round.id);
-    if (index >= 0) {
-      list[index] = updatedRound;
-    } else {
-      list.push(updatedRound);
-    }
-    localStorage.setItem('hrd_rounds', JSON.stringify(list));
-    return updatedRound;
+    return data as Round;
   },
 
   async deleteRound(id: string): Promise<boolean> {
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('rounds').delete().eq('id', id);
-        if (!error) return true;
-      } catch (e) {
-        console.warn('Supabase round delete failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { error } = await supabase!
+      .from('rounds')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase round delete failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_rounds');
-    if (local) {
-      let list: Round[] = JSON.parse(local);
-      list = list.filter(r => r.id !== id);
-      localStorage.setItem('hrd_rounds', JSON.stringify(list));
-      return true;
-    }
-    return false;
+    return true;
   },
 
   // === CHECKLIST ===
   async getChecklists(): Promise<ChecklistItem[]> {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('checklists')
-          .select('*')
-          .order('sort_order', { ascending: true });
-        if (!error && data) return data as ChecklistItem[];
-      } catch (e) {
-        console.warn('Supabase checklists fetch failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('checklists')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase checklists fetch failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_checklists');
-    return local ? JSON.parse(local) : INITIAL_CHECKLISTS;
+    return data as ChecklistItem[];
   },
 
   async saveChecklist(item: ChecklistItem): Promise<ChecklistItem> {
+    ensureSupabase();
     const updatedItem = {
       ...item,
       updated_at: new Date().toISOString()
     };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('checklists')
-          .upsert(updatedItem)
-          .select()
-          .single();
-        if (!error && data) return data as ChecklistItem;
-      } catch (e) {
-        console.warn('Supabase checklist save failed, saving to LocalStorage', e);
-      }
+    const { data, error } = await supabase!
+      .from('checklists')
+      .upsert(updatedItem)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase checklist save failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_checklists');
-    let list: ChecklistItem[] = local ? JSON.parse(local) : INITIAL_CHECKLISTS;
-    const index = list.findIndex(c => c.id === item.id);
-    if (index >= 0) {
-      list[index] = updatedItem;
-    } else {
-      list.push(updatedItem);
-    }
-    localStorage.setItem('hrd_checklists', JSON.stringify(list));
-    return updatedItem;
+    return data as ChecklistItem;
   },
 
   async deleteChecklist(id: string): Promise<boolean> {
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('checklists').delete().eq('id', id);
-        if (!error) return true;
-      } catch (e) {
-        console.warn('Supabase checklist delete failed, falling back to LocalStorage', e);
-      }
+    ensureSupabase();
+    const { error } = await supabase!
+      .from('checklists')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase checklist delete failed:', error);
+      throw error;
     }
-    const local = localStorage.getItem('hrd_checklists');
-    if (local) {
-      let list: ChecklistItem[] = JSON.parse(local);
-      list = list.filter(c => c.id !== id);
-      localStorage.setItem('hrd_checklists', JSON.stringify(list));
-      return true;
-    }
-    return false;
+    return true;
   },
 
   // === SHARE BOARD ===
   async getSharePosts(): Promise<SharePost[]> {
-    const local = localStorage.getItem('hrd_share_posts');
-    const posts: SharePost[] = local ? JSON.parse(local) : INITIAL_SHARE_POSTS;
-    return posts.filter(p => p.is_active).sort((a, b) => b.created_at.localeCompare(a.created_at));
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('share_posts')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Supabase share_posts fetch failed:', error);
+      throw error;
+    }
+    return data as SharePost[];
   },
 
   async saveSharePost(post: SharePost): Promise<SharePost> {
-    const local = localStorage.getItem('hrd_share_posts');
-    let list: SharePost[] = local ? JSON.parse(local) : INITIAL_SHARE_POSTS;
-    const index = list.findIndex(p => p.id === post.id);
-    if (index >= 0) {
-      list[index] = post;
-    } else {
-      list.push(post);
+    ensureSupabase();
+    const { data, error } = await supabase!
+      .from('share_posts')
+      .upsert(post)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Supabase share_post save failed:', error);
+      throw error;
     }
-    localStorage.setItem('hrd_share_posts', JSON.stringify(list));
-    return post;
+    return data as SharePost;
   },
 
   async deleteSharePost(id: string): Promise<boolean> {
-    const local = localStorage.getItem('hrd_share_posts');
-    if (local) {
-      let list: SharePost[] = JSON.parse(local);
-      const index = list.findIndex(p => p.id === id);
-      if (index >= 0) {
-        list[index].is_active = false;
-        localStorage.setItem('hrd_share_posts', JSON.stringify(list));
-        return true;
-      }
+    ensureSupabase();
+    // Soft delete to keep consistent with is_active check
+    const { error } = await supabase!
+      .from('share_posts')
+      .update({ is_active: false })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Supabase share_post delete failed:', error);
+      throw error;
     }
-    return false;
+    return true;
   },
 
   // Reload action
@@ -348,11 +253,13 @@ export const dbService = {
     checklists: ChecklistItem[];
     sharePosts: SharePost[];
   }> {
-    const members = await this.getMembers();
-    const projects = await this.getProjects();
-    const rounds = await this.getRounds();
-    const checklists = await this.getChecklists();
-    const sharePosts = await this.getSharePosts();
+    const [members, projects, rounds, checklists, sharePosts] = await Promise.all([
+      this.getMembers(),
+      this.getProjects(),
+      this.getRounds(),
+      this.getChecklists(),
+      this.getSharePosts()
+    ]);
     return { members, projects, rounds, checklists, sharePosts };
   }
 };
